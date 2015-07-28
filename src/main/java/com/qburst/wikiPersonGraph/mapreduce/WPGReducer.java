@@ -27,7 +27,7 @@ public class WPGReducer extends TableReducer<Text, Text, ImmutableBytesWritable>
         }
 
         if(persons.contains("**person**")) {
-            persons = persons.replace("**person**,", "");
+            persons = persons.replace("**person**;", "");
             persons = persons.replace(rowKey + "; ", "");
             byte[] columnFamily = Bytes.toBytes(configuration.get("columnFamily"));
             byte[] columnName = Bytes.toBytes(configuration.get("columnName"));
