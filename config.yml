@@ -1,0 +1,6 @@
+job: WikiCrawlerJob
+source: hdfs://localhost:54310/user/qbuser/wikipedia/wikiSample.txt
+table: WikiPersonGraph
+columnFamily: relation
+columnName: dependents
+indexfile: /home/jithinoc/Doug/WikiPersonGraph/infobox.txt
