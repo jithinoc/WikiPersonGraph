@@ -29,12 +29,12 @@ public class WPGMapper extends Mapper<LongWritable, Text, Text, Text> {
         Text textTitle = new Text(title);
         String[] links = this.getLinks(content);
 
+
         if(links != null) {
             for (String link : links) {
                 link = link.toLowerCase();
                 link = link.trim();
                 link = link.replaceAll(" ", "_");
-                link = link.split("|")[0];
                 out.set(link);
                 context.write(out, textTitle);
             }
