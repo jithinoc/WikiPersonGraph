@@ -21,6 +21,7 @@ public class JobHelper {
             }
 
         } catch (Exception ex) {
+            LOGGER.info("CONFIGURATION CREATION FAILED. SOMETHING WRONG IN Config.yml");
             LOGGER.info(ex.getMessage());
             System.exit(1);
         }

@@ -15,37 +15,32 @@ public class WPGJob {
     private Logger LOGGER = Logger.getLogger(WPGJob.class);
     private Job job;
 
-    public WPGJob(Configuration configuration) {
+    public WPGJob(Configuration configuration) throws IOException {
         this.job = createJob(configuration);
     }
 
-    public Job createJob(Configuration configuration) {
-        Job job=null;
-        try {
-            job = new Job(configuration, configuration.get("job"));
-            job.setJarByClass(WPGJob.class);
-            job.setMapperClass(WPGMapper.class);
-            job.setMapOutputKeyClass(Text.class);
-            job.setMapOutputValueClass(Text.class);
-            job.setInputFormatClass(WikiPageInputFormat.class);
-            TableMapReduceUtil.initTableReducerJob(
-                    configuration.get("table"),
-                    WPGReducer.class,
-                    job
-            );
-            FileInputFormat.addInputPath(job, new Path(configuration.get("source")));
-        }catch (IOException ex) {
-            LOGGER.info("Job creation failed");
-            ex.printStackTrace();
-        }
+    public Job createJob(Configuration configuration) throws IOException {
+        Job job = Job.getInstance(configuration, configuration.get("job"));
+        job.setJarByClass(WPGJob.class);
+        job.setMapperClass(WPGMapper.class);
+        job.setMapOutputKeyClass(Text.class);
+        job.setMapOutputValueClass(Text.class);
+        job.setInputFormatClass(WikiPageInputFormat.class);
+        TableMapReduceUtil.initTableReducerJob(
+                configuration.get("table"),
+                WPGReducer.class,
+                job
+        );
+        FileInputFormat.addInputPath(job, new Path(configuration.get("source")));
+
         return job;
     }
+
     public boolean run() {
         try {
             return job.waitForCompletion(true);
-        }catch (Exception ex) {
+        } catch (Exception ex) {
             LOGGER.info("Job run failed");
-            ex.printStackTrace();
             return false;
         }
     }

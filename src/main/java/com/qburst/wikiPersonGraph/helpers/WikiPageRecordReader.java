@@ -1,5 +1,6 @@
 package com.qburst.wikiPersonGraph.helpers;
 
+import com.qburst.wikiPersonGraph.utils.Constants;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -17,17 +18,16 @@ import org.apache.log4j.Logger;
 
 import java.io.IOException;
 
-public class WikiPageRecordReader extends RecordReader<LongWritable, Text> {
-    private Logger LOGGER = Logger.getLogger(WikiPageRecordReader.class);
+public class WikiPageRecordReader extends RecordReader<Text, Text> {
     private byte[] startTag;
     private byte[] endTag;
     private long start;
     private long end;
     private FSDataInputStream fsDataInputStream;
     private DataOutputBuffer dataOutputBuffer = new DataOutputBuffer();
-    private LongWritable key = new LongWritable();
+    private Text key = new Text();
     private Text value = new Text();
-    private Indexer indexer = new Indexer();
+    private Indexer personIndexer = new Indexer();
 
     @Override
     public void close() throws IOException {
@@ -40,7 +40,7 @@ public class WikiPageRecordReader extends RecordReader<LongWritable, Text> {
     }
 
     @Override
-    public LongWritable getCurrentKey() throws IOException,
+    public Text getCurrentKey() throws IOException,
             InterruptedException {
         return key;
     }
@@ -51,11 +51,21 @@ public class WikiPageRecordReader extends RecordReader<LongWritable, Text> {
         return value;
     }
 
-    public String getInfobox(String content) {
-        String title = StringUtils.substringBetween(content, "{{Infobox ", "\n");
-        if(title == null)
+    private String getCategory(String content) {
+        String category = StringUtils.substringBetween(content, "{{Infobox ", "\n");
+        if(category == null) {
             return null;
-        return title.toLowerCase();
+        }
+        return category.toLowerCase();
+    }
+
+    private String getPageTitle(String content) {
+        String pageTitle = StringUtils.substringBetween(
+                content, Constants.Page.OPEN_TITLE_TAG, Constants.Page.CLOSE_TITLE_TAG
+        );
+        if(pageTitle == null)
+            return null;
+        return pageTitle.toLowerCase().replaceAll(" ", "_");
     }
 
     @Override
@@ -67,12 +77,14 @@ public class WikiPageRecordReader extends RecordReader<LongWritable, Text> {
                         dataOutputBuffer.write(startTag);
                         if (readUntilMatch(endTag, true)) {
                             String content = Bytes.toString(dataOutputBuffer.getData());
-                            key.set(fsDataInputStream.getPos());
-                            value.set(dataOutputBuffer.getData(), 0,
-                                    dataOutputBuffer.getLength());
-                            String infoboxValue = this.getInfobox(content);
-                            if(indexer.check(infoboxValue))
+                            String pageTitle = this.getPageTitle(content);
+                            String category = this.getCategory(content);
+                            if(personIndexer.contains(category) && pageTitle != null) {
+                                key.set(pageTitle);
+                                value.set(dataOutputBuffer.getData(), 0,
+                                        dataOutputBuffer.getLength());
                                 return true;
+                            }
                         }
                     } finally {
                         dataOutputBuffer.reset();
@@ -87,9 +99,9 @@ public class WikiPageRecordReader extends RecordReader<LongWritable, Text> {
     @Override
     public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
         Configuration configuration = context.getConfiguration();
-        indexer.loadIndexFromFile(configuration.get("indexfile"));
-        startTag = "<page>".getBytes("utf-8");
-        endTag = "</page>".getBytes("utf-8");
+        personIndexer.loadIndexFromFile(configuration.get("indexfile"));
+        startTag = Constants.Page.OPEN_PAGE_TAG.getBytes("utf-8");
+        endTag = Constants.Page.CLOSE_PAGE_TAG.getBytes("utf-8");
         FileSplit fileSplit = (FileSplit) split;
 
         start = fileSplit.getStart();

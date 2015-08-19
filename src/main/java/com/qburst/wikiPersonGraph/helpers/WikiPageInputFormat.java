@@ -9,9 +9,9 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
-public class WikiPageInputFormat extends FileInputFormat<LongWritable, Text> {
+public class WikiPageInputFormat extends FileInputFormat<Text, Text> {
     @Override
-    public RecordReader<LongWritable, Text> createRecordReader(InputSplit split, TaskAttemptContext context) {
+    public RecordReader<Text, Text> createRecordReader(InputSplit split, TaskAttemptContext context) {
         return new WikiPageRecordReader();
     }
 

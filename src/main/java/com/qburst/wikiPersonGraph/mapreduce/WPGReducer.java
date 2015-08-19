@@ -1,5 +1,6 @@
 package com.qburst.wikiPersonGraph.mapreduce;
 
+import com.qburst.wikiPersonGraph.utils.Constants;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
@@ -10,28 +11,27 @@ import org.apache.hadoop.io.Text;
 import java.io.IOException;
 
 public class WPGReducer extends TableReducer<Text, Text, ImmutableBytesWritable> {
-    public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException{
+    public void reduce(Text person, Iterable<Text> dependents, Context context) throws IOException, InterruptedException {
         Put put;
-        String rowKey = key.toString();
         Configuration configuration = context.getConfiguration();
-        String persons = "";
-        if(rowKey.equals(""))
-            rowKey = "null";
-        put = new Put(rowKey.getBytes());
-        String token;
+        put = new Put(person.toString().getBytes());
+        String name;
 
-        for(Text value: values) {
-            token = value.toString();
-            if(!persons.contains(token))
-                persons += token + "; ";
+        String dependencyChain = "";
+        for(Text dependent: dependents) {
+            name = dependent.toString();
+            if(!dependencyChain.contains(name))
+                dependencyChain += name + "; ";
         }
 
-        if(persons.contains("**person**")) {
-            persons = persons.replace("**person**;", "");
-            persons = persons.replace(rowKey + "; ", "");
+        if(dependencyChain.contains(Constants.Person.PERSON_TAG)) {
+            /* remove person_tag and owner person_name from dependencyChain */
+            dependencyChain = dependencyChain.replace("**person**;", "");
+            dependencyChain = dependencyChain.replace(person.toString() + "; ", "");
+
             byte[] columnFamily = Bytes.toBytes(configuration.get("columnFamily"));
             byte[] columnName = Bytes.toBytes(configuration.get("columnName"));
-            byte[] columnValue = Bytes.toBytes(persons);
+            byte[] columnValue = Bytes.toBytes(dependencyChain);
             put.add(columnFamily, columnName, columnValue);
             context.write(null, put);
         }

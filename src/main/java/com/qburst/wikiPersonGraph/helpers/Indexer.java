@@ -39,7 +39,7 @@ public class Indexer {
         return index.size();
     }
 
-    public boolean check(String pattern) {
+    public boolean contains(String pattern) {
         return index.contains(pattern);
     }
 
